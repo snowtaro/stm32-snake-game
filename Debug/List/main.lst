@@ -1,0 +1,192 @@
+###############################################################################
+#
+# IAR ANSI C/C++ Compiler V8.22.1.15669/W32 for ARM       04/Dec/2025  21:01:33
+# Copyright 1999-2018 IAR Systems AB.
+#
+#    Cpu mode     =  thumb
+#    Endian       =  little
+#    Source file  =  C:\Users\pnu7\Desktop\project_test (2)\user\main.c
+#    Command line =  
+#        -f C:\Users\pnu7\AppData\Local\Temp\EW1AC6.tmp
+#        ("C:\Users\pnu7\Desktop\project_test (2)\user\main.c" -D
+#        USE_STDPERIPH_DRIVER -D STM32F10X_CL -lC
+#        "C:\Users\pnu7\Desktop\project_test (2)\Debug\List" -o
+#        "C:\Users\pnu7\Desktop\project_test (2)\Debug\Obj" --no_cse
+#        --no_unroll --no_inline --no_code_motion --no_tbaa --no_clustering
+#        --no_scheduling --debug --endian=little --cpu=Cortex-M3 -e --fpu=None
+#        --dlib_config "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        8.0\arm\INC\c\DLib_Config_Normal.h" -I
+#        "C:\Users\pnu7\Desktop\project_test
+#        (2)\libraries\CMSIS\DeviceSupport\" -I
+#        "C:\Users\pnu7\Desktop\project_test
+#        (2)\libraries\CMSIS\DeviceSupport\Startup\" -I
+#        "C:\Users\pnu7\Desktop\project_test
+#        (2)\libraries\STM32F10x_StdPeriph_Driver_v3.5\inc\" -I
+#        "C:\Users\pnu7\Desktop\project_test
+#        (2)\libraries\STM32F10x_StdPeriph_Driver_v3.5\src\" -I
+#        "C:\Users\pnu7\Desktop\project_test (2)\user\" -I
+#        "C:\Users\pnu7\Desktop\project_test (2)\user\inc\" -I
+#        "C:\Users\pnu7\Desktop\project_test (2)\libraries\LCD\" -Ol -I
+#        "C:\Program Files (x86)\IAR Systems\Embedded Workbench
+#        8.0\arm\CMSIS\Core\Include\" -I "C:\Program Files (x86)\IAR
+#        Systems\Embedded Workbench 8.0\arm\CMSIS\DSP\Include\")
+#    Locale       =  C
+#    List file    =  C:\Users\pnu7\Desktop\project_test (2)\Debug\List\main.lst
+#    Object file  =  C:\Users\pnu7\Desktop\project_test (2)\Debug\Obj\main.o
+#
+###############################################################################
+
+C:\Users\pnu7\Desktop\project_test (2)\user\main.c
+      1          // main.c
+      2          #include "stm32f10x.h"
+      3          #include "button.h"
+      4          #include "display.h"
+      5          #include "snake.h"
+      6          #include <stdlib.h>
+      7          
+      8          // @@@???@@?@@???@@??(@@@ ?@@??
+
+   \                                 In section .text, align 2, keep-with-next
+      9          static void delay_loop(volatile uint32_t count)
+     10          {
+   \                     delay_loop: (+1)
+   \   00000000   0xB401             PUSH     {R0}
+   \   00000002   0xE000             B.N      ??delay_loop_0
+     11              while (count--) {
+     12                  __NOP();
+   \                     ??delay_loop_1: (+1)
+   \   00000004   0xBF00             Nop      
+     13              }
+   \                     ??delay_loop_0: (+1)
+   \   00000006   0x9800             LDR      R0,[SP, #+0]
+   \   00000008   0x1E41             SUBS     R1,R0,#+1
+   \   0000000A   0x9100             STR      R1,[SP, #+0]
+   \   0000000C   0x2800             CMP      R0,#+0
+   \   0000000E   0xD1F9             BNE.N    ??delay_loop_1
+     14          }
+   \   00000010   0xB001             ADD      SP,SP,#+4
+   \   00000012   0x4770             BX       LR               ;; return
+     15          
+
+   \                                 In section .text, align 2, keep-with-next
+     16          int main(void)
+     17          {
+   \                     main: (+1)
+   \   00000000   0xB580             PUSH     {R7,LR}
+     18              SystemInit();
+   \   00000002   0x.... 0x....      BL       SystemInit
+     19          
+     20              Button_Init();
+   \   00000006   0x.... 0x....      BL       Button_Init
+     21              Display_Init();
+   \   0000000A   0x.... 0x....      BL       Display_Init
+     22              snake_setup();
+   \   0000000E   0x.... 0x....      BL       snake_setup
+     23          
+     24              // ?@@ ?@@ (?@@??@@@@?
+     25              srand(1);
+   \   00000012   0x2001             MOVS     R0,#+1
+   \   00000014   0x.... 0x....      BL       srand
+     26          
+     27              static char grid[GRID_ROWS][GRID_COLS];
+     28          
+     29              while (1)
+     30              {
+     31                  // 1) @@@ ?@@ ??@@@ @€@
+     32                  KeyInput key = Button_GetInput();
+   \                     ??main_0: (+1)
+   \   00000018   0x.... 0x....      BL       Button_GetInput
+     33                  if (key != KEY_NONE) {
+   \   0000001C   0x0001             MOVS     R1,R0
+   \   0000001E   0xB2C9             UXTB     R1,R1            ;; ZeroExt  R1,R1,#+24,#+24
+   \   00000020   0x2900             CMP      R1,#+0
+   \   00000022   0xD00A             BEQ.N    ??main_1
+     34                      snake_set_direction(key);
+   \   00000024   0xB2C0             UXTB     R0,R0            ;; ZeroExt  R0,R0,#+24,#+24
+   \   00000026   0x.... 0x....      BL       snake_set_direction
+     35          
+     36                      // @@@ ?@@?@@ (?@@@??@?)
+     37                      delay_loop(50000);
+   \   0000002A   0xF24C 0x3050      MOVW     R0,#+50000
+   \   0000002E   0x.... 0x....      BL       delay_loop
+     38                      while (Button_GetInput() != KEY_NONE) {
+   \                     ??main_2: (+1)
+   \   00000032   0x.... 0x....      BL       Button_GetInput
+   \   00000036   0x2800             CMP      R0,#+0
+   \   00000038   0xD1FB             BNE.N    ??main_2
+     39                          // @@@ ???@@@€ ?€@
+     40                      }
+     41                  }
+     42          
+     43                  // 2) @@@ ?@@ ?@@?@@
+     44                  snake_update();
+   \                     ??main_1: (+1)
+   \   0000003A   0x.... 0x....      BL       snake_update
+     45          
+     46                  // 3) ?@@ ?@@@?char @@@?@@ @€?
+     47                  snake_to_grid(grid);
+   \   0000003E   0x....             LDR.N    R0,??DataTable1
+   \   00000040   0x.... 0x....      BL       snake_to_grid
+     48          
+     49                  // 4) @@@?@? LCD??@@@
+     50                  Display_DrawGrid(grid);
+   \   00000044   0x....             LDR.N    R0,??DataTable1
+   \   00000046   0x.... 0x....      BL       Display_DrawGrid
+     51          
+     52                  // 5) @@@ ?@@ @@@ (@?@@@?@@ ?@@???@@??@@@@???
+     53                  delay_loop(10000);
+   \   0000004A   0xF242 0x7010      MOVW     R0,#+10000
+   \   0000004E   0x.... 0x....      BL       delay_loop
+   \   00000052   0xE7E1             B.N      ??main_0
+     54              }
+     55          
+     56              return 0;
+                     ^
+Warning[Pe111]: statement is unreachable
+     57          }
+
+   \                                 In section .bss, align 4
+   \                     `main::grid`:
+   \   00000000                      DS8 400
+
+   \                                 In section .text, align 4, keep-with-next
+   \                     ??DataTable1:
+   \   00000000   0x........         DC32     `main::grid`
+
+   Maximum stack usage in bytes:
+
+   .cstack Function
+   ------- --------
+       4   delay_loop
+       8   main
+         8   -> Button_GetInput
+         8   -> Button_Init
+         8   -> Display_DrawGrid
+         8   -> Display_Init
+         8   -> SystemInit
+         8   -> delay_loop
+         8   -> snake_set_direction
+         8   -> snake_setup
+         8   -> snake_to_grid
+         8   -> snake_update
+         8   -> srand
+
+
+   Section sizes:
+
+   Bytes  Function/Label
+   -----  --------------
+       4  ??DataTable1
+      20  delay_loop
+     400  grid
+      84  main
+
+ 
+ 400 bytes in section .bss
+ 108 bytes in section .text
+ 
+ 108 bytes of CODE memory
+ 400 bytes of DATA memory
+
+Errors: none
+Warnings: 1

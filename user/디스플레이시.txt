@@ -1,0 +1,29 @@
+// display.c
+#include "display.h"
+
+#define BASE_X      20
+#define BASE_Y      40
+#define LINE_H      16     // 줄 간 간격 (픽셀)
+#define COL_W       10     // 열 간 간격 (픽셀)
+
+void Display_Init(void)
+{
+    LCD_Init();
+    LCD_Clear(WHITE);
+}
+
+void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS])
+{
+    LCD_Clear(WHITE);
+
+    for (int r = 0; r < GRID_ROWS; r++) {
+        for (int c = 0; c < GRID_COLS; c++) {
+            if (grid[r][c] != '\0') {
+                char buf[2] = { grid[r][c], '\0' };
+                int x = BASE_X + (c * COL_W);
+                int y = BASE_Y + (r * LINE_H);
+                LCD_ShowString(x, y, buf, BLACK, WHITE);
+            }
+        }
+    }
+}
