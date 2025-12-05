@@ -1,6 +1,6 @@
 // main.c
 #include "stm32f10x.h"
-#include "button.h"
+#include "joystick.h"
 #include "display.h"
 #include "snake.h"
 #include <stdlib.h>
@@ -17,7 +17,7 @@ int main(void)
 {
     SystemInit();
 
-    Button_Init();
+    Joystick_Init(); // Changed from Button_Init
     Display_Init();
     snake_setup();
 
@@ -28,15 +28,19 @@ int main(void)
 
     while (1)
     {
+        // 0) LED 제어 (Joystick 기능)
+        Joystick_HandleInput();
+
         // 1) 버튼 입력 → 방향 변경
-        KeyInput key = Button_GetInput();
+        KeyInput key = Joystick_GetInput(); // Changed from Button_GetInput
         if (key != KEY_NONE) {
             snake_set_direction(key);
 
             // 간단 디바운스 (원하면 유지)
             delay_loop(50000);
-            while (Button_GetInput() != KEY_NONE) {
+            while (Joystick_GetInput() != KEY_NONE) {
                 // 버튼 뗄 때까지 대기
+                Joystick_HandleInput(); // Keep handling LEDs while waiting?
             }
         }
 
