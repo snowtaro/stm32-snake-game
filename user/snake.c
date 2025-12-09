@@ -35,8 +35,8 @@ void snake_setup(void)
     generate_food();
 }
 
-// 게임 진행 중 상태 업데이트
-void snake_update(void)
+// 게임 진행 중 상태 업데이트 - 출력이 1이면 게임 종료
+int snake_update(void)
 {
     // 현재 머리 위치
     Point head = snake.body[0];
@@ -57,8 +57,7 @@ void snake_update(void)
         newHead.y < 0 || newHead.y >= BOARD_HEIGHT)
     {
         // GAME OVER → 다시 시작
-        snake_setup();
-        return;
+        return 1;
     }
 
     // 자기몸 충돌 체크
@@ -66,9 +65,8 @@ void snake_update(void)
         if (snake.body[i].x == newHead.x &&
             snake.body[i].y == newHead.y)
         {
-            // GAME OVER → 다시 시작
-            snake_setup();
-            return;
+            // GAME OVER 
+            return 1;
         }
     }
 
@@ -92,6 +90,8 @@ void snake_update(void)
         score++;
         generate_food();
     }
+
+    return 0;
 }
 
 void snake_set_direction(int newDir)

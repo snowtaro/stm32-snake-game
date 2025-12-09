@@ -4,12 +4,12 @@
 
 #include <stdint.h>
 
-// ½º³×ÀÌÅ© º¸µå Å©±â
+// ìŠ¤ë„¤ì´í¬ ë³´ë“œ í¬ê¸°
 #define BOARD_WIDTH     20
 #define BOARD_HEIGHT    20
 #define MAX_SNAKE_SIZE  100
 
-// (±âÁ¸ »ó¼öµéÀº ÇÊ¿ä½Ã À¯Áö)
+// (ê¸°ì¡´ ìƒìˆ˜ë“¤ì€ í•„ìš”ì‹œ ìœ ì§€)
 #define CELL_SIZE 10
 #define WIDTH   40
 #define HEIGHT  20
@@ -24,15 +24,15 @@ typedef struct {
 } Snake;
 
 void snake_setup(void);
-void snake_update(void);
+int snake_update(void);
 void snake_set_direction(int newDir);
 
 Snake* snake_get(void);
 Point* snake_get_food(void);
 int snake_get_score(void);
 
-// ÇöÀç ½º³×ÀÌÅ© »óÅÂ¸¦ 2D ±×¸®µå(char ¹è¿­)¿¡ Åõ¿µ
-// grid[y][x] ¿¡ ¹®ÀÚ Ã¤¿ò (°ø¹é: ' ')
+// í˜„ì¬ ìŠ¤ë„¤ì´í¬ ìƒíƒœë¥¼ 2D ê·¸ë¦¬ë“œ(char ë°°ì—´)ì— íˆ¬ì˜
+// grid[y][x] ì— ë¬¸ì ì±„ì›€ (ê³µë°±: ' ')
 void snake_to_grid(char grid[BOARD_HEIGHT][BOARD_WIDTH]);
 
 #endif

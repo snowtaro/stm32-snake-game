@@ -41,7 +41,10 @@ int main(void)
         }
 
         // 2) 게임 상태 업데이트
-        snake_update();
+        if(snake_update()) {
+            // 게임 오버일 시 > 다시 시작
+            snake_setup();
+        }
 
         // 3) 현재 상태를 char 그리드로 변환
         snake_to_grid(grid);
