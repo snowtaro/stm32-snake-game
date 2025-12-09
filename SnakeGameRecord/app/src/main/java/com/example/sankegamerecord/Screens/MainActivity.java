@@ -17,6 +17,8 @@ import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresPermission;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -25,6 +27,9 @@ import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 import com.example.sankegamerecord.Adapter.BluetoothConnectionAdapter;
 import com.example.sankegamerecord.Background.GetRecordService;
 import com.example.sankegamerecord.R;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,15 +60,14 @@ public class MainActivity extends AppCompatActivity {
         btAdapter = new BluetoothConnectionAdapter(this);
         connectBtn.setOnTouchListener(effect);
 
-        // 🔥 showDeviceList 직접 호출 X → 권한 체크 먼저
+        //권한 체크 먼저
         connectBtn.setOnClickListener(v -> {
             if (btAdapter.getCurrentState()==btAdapter.STATE_NONE || btAdapter.getCurrentState()==btAdapter.STATE_DISCONNECTED) {
                 // 연결 상태가 아니면 장치 목록 보여주고 연결 시도
-                checkBluetoothPermission();
+                checkPermission();
             } else {
                 // 이미 연결된 상태 → Disconnect
                 btAdapter.stop();
-                connectBtn.setText("연결하기");
             }
         });
 
@@ -80,30 +84,40 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 🔥 Android 12+ Bluetooth 권한 체크
+     *  Android 12+ Bluetooth 권한 체크
      */
-    private void checkBluetoothPermission() {
+    private void checkPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+
+            List<String> need = new ArrayList<>();
+
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT)
                     != PackageManager.PERMISSION_GRANTED) {
+                need.add(Manifest.permission.BLUETOOTH_CONNECT);
+            }
 
-                // → 권한 요청 (팝업 뜸)
-                requestPermissions(
-                        new String[]{ Manifest.permission.BLUETOOTH_CONNECT },
-                        REQ_BT_CONNECT
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                need.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+
+            // 한 번에 요청
+            if (!need.isEmpty()) {
+                ActivityCompat.requestPermissions(
+                        this,
+                        need.toArray(new String[0]),
+                        1001
                 );
-                return;
+            }else{
+                showDeviceList();
             }
         }
-
-        // 권한 있음 → 장치 목록 보여줌
-        showDeviceList();
     }
 
+
     /**
-     * 🔥 권한 요청 결과 처리
+     *  권한 요청 결과 처리
      */
-    @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String[] permissions,
@@ -111,16 +125,19 @@ public class MainActivity extends AppCompatActivity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
 
         if (requestCode == REQ_BT_CONNECT) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
 
-                // 권한 허용됨 → 장치 목록 띄우기
+            boolean granted = true;
+            for (int g : grantResults)
+                if (g != PackageManager.PERMISSION_GRANTED) granted = false;
+
+            if (granted) {
                 showDeviceList();
             } else {
-                Toast.makeText(this, "블루투스 권한이 필요합니다.", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Bluetooth permission required", Toast.LENGTH_SHORT).show();
             }
         }
     }
+
 
     private final BroadcastReceiver btEventReceiver = new BroadcastReceiver() {
         @Override
@@ -145,9 +162,11 @@ public class MainActivity extends AppCompatActivity {
                 asyncDialog.dismiss();
                 Toast.makeText(MainActivity.this, "연결 실패. 다시 시도해주세요", Toast.LENGTH_SHORT).show();
                 connectBtn.setText("연결하기");
-            } else if (state == BluetoothConnectionAdapter.STATE_NONE){
+                btAdapter.ackFinished();
+            } else if (state == BluetoothConnectionAdapter.STATE_FINISHED){
                 Toast.makeText(MainActivity.this, "연결 해제되었습니다.", Toast.LENGTH_SHORT).show();
                 connectBtn.setText("연결하기");
+                btAdapter.ackFinished();
             }
         }
     };

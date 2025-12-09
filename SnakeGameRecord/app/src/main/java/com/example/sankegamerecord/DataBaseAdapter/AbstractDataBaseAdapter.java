@@ -35,6 +35,13 @@ public abstract class AbstractDataBaseAdapter {
         this.context = context;
         dbHelper = new DatabaseHelper(context);
     }
+    /**
+     * 각 구체 DB Adapter 클래스가 자신의 테이블 생성 SQL을 구현하는 메소드입니다.
+     *
+     * @param db SQLite DB 인스턴스
+     */
+    protected abstract void onCreateTable(SQLiteDatabase db);
+
 
     /**
      * 데이터베이스를 열고 쓰기 가능한 연결을 설정합니다.
@@ -66,6 +73,7 @@ public abstract class AbstractDataBaseAdapter {
     protected String gameRecordToJson(GameRecord gr) {
         try {
             JSONObject json = new JSONObject();
+            json.put("player",gr.Player());
             json.put("playdate", gr.Playdate().toString()); // 게임 플레이 날짜 및 시간
             // Duration을 밀리초(long)로 변환하여 저장 (데이터베이스에 저장하기 쉬운 형태로)
             json.put("playtime", gr.Playtime().toMillis());
@@ -85,12 +93,13 @@ public abstract class AbstractDataBaseAdapter {
     protected GameRecord parseGameRecord(String jsonStr) {
         try {
             JSONObject json = new JSONObject(jsonStr);
+            String name=json.getString("player");
             // 저장된 문자열을 LocalDateTime 객체로 다시 파싱
             java.time.LocalDateTime playdate = java.time.LocalDateTime.parse(json.getString("playdate"));
             // 저장된 밀리초 값을 Duration 객체로 다시 변환
             Duration playtime = Duration.ofMillis(json.getLong("playtime"));
             Boolean success = json.getBoolean("success");
-            return new GameRecord(playdate, playtime, success); // 새 GameRecord 객체 생성 (외부 정의된 생성자 사용)
+            return new GameRecord(name, playdate, playtime, success); // 새 GameRecord 객체 생성 (외부 정의된 생성자 사용)
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -127,9 +136,9 @@ public abstract class AbstractDataBaseAdapter {
     /**
      * SQLiteOpenHelper를 상속받아 데이터베이스의 생성과 업그레이드를 관리하는 내부 헬퍼 클래스입니다.
      */
-    protected static class DatabaseHelper extends SQLiteOpenHelper {
+    protected class DatabaseHelper extends SQLiteOpenHelper {
         private static final String DATABASE_NAME = "myapp.db"; // 데이터베이스 파일 이름
-        private static final int DATABASE_VERSION = 1; // 데이터베이스 버전 번호 (스키마 변경 시 증가)
+        private static final int DATABASE_VERSION = 5; // 데이터베이스 버전 번호 (스키마 변경 시 증가)
 
         /**
          * 헬퍼 생성자. 데이터베이스 파일 이름과 버전을 설정합니다.
@@ -145,9 +154,8 @@ public abstract class AbstractDataBaseAdapter {
          */
         @Override
         public void onCreate(SQLiteDatabase db) {
-            // RecordAdapter와 RankAdapter에 정의된 SQL문을 실행하여 필요한 테이블들을 생성합니다. (외부 정의 상수)
-            db.execSQL(RecordAdapter.CREATE_TABLE_SQL);
-            db.execSQL(RankAdapter.CREATE_TABLE_SQL);
+            new RecordAdapter(context).onCreateTable(db);
+            new RankAdapter(context).onCreateTable(db);
         }
 
         /**

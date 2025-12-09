@@ -18,10 +18,12 @@ public class ProtocolInterpreter {
 
     // 생성자를 private으로 선언하여 외부에서 객체를 생성할 수 없도록 합니다.
     // 이 클래스는 모든 메서드가 static처럼 사용되는 유틸리티 클래스임을 의미합니다.
-    public ProtocolInterpreter() {}
+    public ProtocolInterpreter() {
+    }
 
     /**
      * "HH:mm:ss:SSS" 형태의 문자열을 Java의 Duration 객체로 변환합니다.
+     *
      * @param timeString 파싱할 시간 문자열 (예: "01:30:500" -> 1분 30초 500밀리초)
      * @return Duration 객체
      * @throws DateTimeParseException 형식이 맞지 않거나 숫자가 아닐 경우 발생
@@ -56,14 +58,16 @@ public class ProtocolInterpreter {
             throw new DateTimeParseException("Duration 구성 요소가 유효한 숫자가 아닙니다.", timeString, 0, e);
         }
     }
+
     /**
      * 수신된 게임 기록 프레임 문자열을 GameRecord 객체로 변환(파싱)합니다.
      * 프로토콜 형식: "[날짜 시간] [플레이시간] [성공여부]"
      * 예: "2025-11-13 17:00:00 01:30:500 true"
+     *
      * @param Frame 파싱할 기록 프레임 문자열
      * @return GameRecord 객체, 파싱 실패 시 null
      */
-    public GameRecord makeRecord(String Frame) {
+    public GameRecord makeRecord(String Frame, String name) {
 
         // LocalDateTime 파싱을 위한 형식 지정
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -73,7 +77,7 @@ public class ProtocolInterpreter {
             String[] data = Frame.split("\\|");
             // 예상되는 data 배열의 요소:
             // data[0]: [구분자], data[1]: "yyyy-MM-dd HH:mm:ss", data[2]: [플레이시간], data[3]: [성공여부]
-            if(data.length == 4 && data[0].equals("RPL")) {
+            if (data.length == 4 && data[0].equals("RPL")) {
                 // 1. 날짜 및 시간 파싱
                 LocalDateTime dateTime = LocalDateTime.parse(data[1], formatter);
 
@@ -82,7 +86,7 @@ public class ProtocolInterpreter {
                 Boolean success = Boolean.parseBoolean(data[3]);
                 // 3. GameRecord 객체 생성
                 // dataTime, success: data[3] (boolean)
-                return new GameRecord(dateTime, duration, success);
+                return new GameRecord(name, dateTime, duration, success);
             }
 
         } catch (DateTimeParseException e) {

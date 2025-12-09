@@ -35,6 +35,7 @@
                 <action android:name="com.yourapp.START_BLE_SERVICE" />
             </intent-filter>
         </service>
+
     </application>
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />

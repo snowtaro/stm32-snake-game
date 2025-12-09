@@ -31,7 +31,7 @@ public class BluetoothConnectionAdapter {
     public static final int STATE_NONE = 0;
     public static final int STATE_CONNECTED = 1;
     public static final int STATE_DISCONNECTED = 2;
-
+    public static final int STATE_FINISHED = 3;
     public static int CurrentState=STATE_NONE;
 
     private Context context;
@@ -158,11 +158,15 @@ public class BluetoothConnectionAdapter {
             if (inStream != null) inStream.close();
             if (outStream != null) outStream.close();
             if (socket != null) socket.close();
-            broadcastState(STATE_NONE, "disconnect");
-            CurrentState=STATE_NONE;
+            broadcastState(STATE_FINISHED, "disconnect");
+            CurrentState=STATE_FINISHED;
         } catch (Exception e) {
             Log.e(TAG, "Close error", e);
         }
+    }
+
+    public void ackFinished(){
+        CurrentState=STATE_NONE;
     }
 
     /** 연결된 장치 MAC 반환 */

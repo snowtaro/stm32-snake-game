@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
+import android.util.Log;
 
 import com.example.sankegamerecord.Adapter.GameRecord;
 
@@ -20,7 +21,9 @@ import java.util.List;
 public class RankAdapter extends AbstractDataBaseAdapter {
 
     public static final String TABLE_NAME = "RANK"; // 이 어댑터가 관리하는 데이터베이스 테이블 이름
-    private static final String COLUMN_RANK = "rank"; // 테이블에 추가된 순위 정보를 저장하는 컬럼 이름 (1위, 2위 등)
+    private static final String COLUMN_NAME = "PlayerName"; //플레이어 이름
+    private static final String COLUMN_PLAYDATE = "PlayDate";
+    private static final String COLUMN_PLAYTIME = "PlayTime";
 
     /**
      * 랭킹 테이블을 생성하는 SQL 명령어입니다.
@@ -31,11 +34,13 @@ public class RankAdapter extends AbstractDataBaseAdapter {
     public static final String CREATE_TABLE_SQL =
             "CREATE TABLE " + TABLE_NAME + "("
                     + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-                    + COLUMN_RECORD + " TEXT NOT NULL, "
-                    + COLUMN_RANK + " INTEGER NOT NULL);";
+                    + COLUMN_NAME + " TEXT NOT NULL, "
+                    + COLUMN_PLAYDATE + " TEXT NOT NULL, "
+                    + COLUMN_PLAYTIME + " INTEGER NOT NULL);";
 
     /**
      * 생성자: 부모 클래스(AbstractDataBaseAdapter)를 호출하여 초기화합니다.
+     *
      * @param context 앱 컨텍스트
      */
     public RankAdapter(Context context) {
@@ -46,6 +51,23 @@ public class RankAdapter extends AbstractDataBaseAdapter {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 랭킹 테이블을 생성하는 SQL 명령어입니다.
+     * <p>
+     * - COLUMN_NAME   : 플레이어 이름 (TEXT)
+     * - COLUMN_SCORE  : 게임 점수 (INTEGER)
+     * - COLUMN_MILLIS : 클리어 시간 (ms 단위, INTEGER)
+     * <p>
+     * 사용 목적:
+     * 랭킹 화면에 표시할 데이터를 저장하며,
+     * 점수 기준 정렬 및 시간 기반 비교가 가능하도록 설계되었습니다.
+     */
+    @Override
+    protected void onCreateTable(SQLiteDatabase db) {
+        db.execSQL(CREATE_TABLE_SQL);
+    }
+
 
     // -----------------------------
     // 외부용 public (데이터 추가 및 조회)
@@ -63,61 +85,49 @@ public class RankAdapter extends AbstractDataBaseAdapter {
 
         SQLiteDatabase db = this.database;
         db.beginTransaction(); // 데이터베이스 트랜잭션 시작 (작업 단위 묶기)
+        long playtime = gameRecord.Playtime().toMillis();
         try {
-            List<GameRecord> records = new ArrayList<>();
+            Log.i("PARSE", "ER"+ playtime);
+        } catch (NumberFormatException e) {
+            Log.e("DB_ERROR", "Invalid time format after cleaning: " + playtime);
+            return;
+        }
+        ContentValues values = new ContentValues();
+        values.put(COLUMN_NAME, gameRecord.Player());
+        values.put(COLUMN_PLAYDATE, gameRecord.Playdate().toString());
+        values.put(COLUMN_PLAYTIME, playtime);
+        try {
+            db.insert(TABLE_NAME, null, values);
 
-            // 2. 현재 DB에 저장된 모든 랭킹 기록을 조회 (순위 순으로 정렬)
-            Cursor cursor = db.query(TABLE_NAME, null, null, null, null, null,
-                    COLUMN_RANK + " ASC");
+            // 3. 초과 데이터 삭제 (Delete/Trim) 쿼리
+            // 100번째로 빠른 기록의 PlayTime 값보다 큰(느린) 모든 기록을 삭제합니다.
+            String deleteSql = "DELETE FROM " + TABLE_NAME +
+                    " WHERE " + COLUMN_PLAYTIME + " > (" +
+                    "    SELECT " + COLUMN_PLAYTIME +
+                    "    FROM " + TABLE_NAME +
+                    "    ORDER BY " + COLUMN_PLAYTIME + " ASC " + // 숫자가 낮은(빠른) 순서로 정렬
+                    "    LIMIT 1 OFFSET 4" +
+                    ");";
 
-            // 3. 조회된 모든 기록을 GameRecord 객체로 파싱하여 리스트에 추가
-            while (cursor.moveToNext()) {
-                // JSON 문자열을 GameRecord 객체로 변환 (부모 클래스 메서드 사용)
-                GameRecord gr = parseGameRecord(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECORD)));
-                // 파싱이 성공한 기록만 리스트에 추가
-                if (gr != null && gr.Success()) records.add(gr);
-            }
-            cursor.close();
-
-            // 4. 새 기록을 리스트에 추가하고 전체 리스트를 "플레이 시간(밀리초)" 기준으로 다시 정렬합니다.
-            // 플레이 시간이 짧을수록 (toMillis() 값이 작을수록) 상위 랭크입니다.
-            records.add(gameRecord);
-            records.sort(Comparator.comparingLong(r -> r.Playtime().toMillis()));
-
-            // 5. 상위 5개의 기록만 데이터베이스에 갱신하거나 삽입합니다.
-            // Math.min(5, records.size()): 최대 5개 또는 리스트 크기만큼만 반복
-            for (int i = 0; i < Math.min(5, records.size()); i++) {
-                GameRecord gr = records.get(i);
-                ContentValues values = new ContentValues();
-
-                // 갱신될 데이터 준비: JSON 기록 및 새로운 순위 (i+1)
-                values.put(COLUMN_RECORD, gameRecordToJson(gr)); // GameRecord를 JSON 문자열로 변환하여 저장
-                values.put(COLUMN_RANK, i + 1); // 1위, 2위, ...
-
-                // 현재 순위(i+1)에 이미 레코드가 있는지 확인
-                Cursor check = db.query(TABLE_NAME, new String[]{COLUMN_ID}, COLUMN_RANK + "=?",
-                        new String[]{String.valueOf(i + 1)}, null, null, null);
-
-                // 해당 순위에 기존 레코드가 있다면 (UPDATE)
-                if (check.moveToFirst()) {
-                    long id = check.getLong(check.getColumnIndexOrThrow(COLUMN_ID));
-                    // 기존 레코드 ID를 찾아 데이터 갱신
-                    db.update(TABLE_NAME, values, COLUMN_ID + "=?", new String[]{String.valueOf(id)});
-                } else {
-                    // 기존 레코드가 없다면 (테이블이 비어있을 때 등) 새로운 레코드 삽입 (INSERT)
-                    db.insert(TABLE_NAME, null, values);
-                }
-                check.close(); // 커서 해제
-            }
-
+            db.execSQL(deleteSql);
             db.setTransactionSuccessful(); // 모든 작업 성공: 변경 사항을 최종적으로 데이터베이스에 반영
         } finally {
             db.endTransaction(); // 트랜잭션 종료 (성공 여부에 관계없이 반드시 호출되어야 함)
         }
     }
 
+    public static String formatMillis(long millis) {
+        long minutes = (millis / 60000);
+        long seconds = (millis % 60000) / 1000;
+        long ms = millis % 1000;
+
+        return String.format("%02d:%02d:%03d", minutes, seconds, ms);
+    }
+
+
     /**
      * 현재 데이터베이스에 저장된 모든 랭킹 기록을 화면 표시에 적합한 문자열 리스트로 가져옵니다.
+     *
      * @return "순위 날짜 이름 플레이시간" 형식의 문자열 리스트
      */
     public List<String> getAllRanksForDisplay() {
@@ -126,15 +136,15 @@ public class RankAdapter extends AbstractDataBaseAdapter {
 
         if (cursor != null && cursor.moveToFirst()) {
             do {
-                int rank = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_RANK));
-                // JSON 문자열에서 GameRecord 객체를 복원
-                GameRecord gr = parseGameRecord(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECORD)));
+                int rank = 1;
 
-                if (gr != null) {
-                    // 표시할 문자열 포맷 생성: "1위 2025-11-13T17:11 이름 01:30.123"
-                    String text = rank + ". " + gr.Playdate() + " "  + formatDuration(gr.Playtime());
-                    list.add(text);
-                }
+                String playerName = cursor.getString(1);
+                String playDate = cursor.getString(2);
+                long playtime = cursor.getLong(3);
+                // 표시할 문자열 포맷 생성: "1위 (이름) 2025-11-13T17:11 01:30.123"
+                String text = rank + ". " + playerName + " " + playDate + " " + formatMillis(playtime);
+                list.add(text);
+                ++rank;
             } while (cursor.moveToNext());
             cursor.close();
         }
@@ -144,6 +154,7 @@ public class RankAdapter extends AbstractDataBaseAdapter {
     /**
      * 데이터베이스에서 랭킹 테이블의 모든 레코드를 순위(COLUMN_RANK) 오름차순으로 조회합니다.
      * 이 함수는 내부적으로 사용됩니다.
+     *
      * @return 조회된 레코드를 가리키는 Cursor 객체
      */
     private Cursor getAllRanks() {
@@ -152,7 +163,7 @@ public class RankAdapter extends AbstractDataBaseAdapter {
                 null,       // 모든 컬럼 조회 (null)
                 null, null, // 조건 없음 (WHERE 절 없음)
                 null, null, // GROUP BY, HAVING 절 없음
-                COLUMN_RANK + " ASC"); // 순위(rank) 오름차순으로 정렬
+                COLUMN_PLAYTIME + " ASC"); // 순위(rank) 오름차순으로 정렬
     }
 
 }

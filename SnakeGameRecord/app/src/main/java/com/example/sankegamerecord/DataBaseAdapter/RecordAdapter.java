@@ -4,6 +4,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
 
 import com.example.sankegamerecord.Adapter.GameRecord;
 
@@ -27,6 +28,24 @@ public class RecordAdapter extends AbstractDataBaseAdapter {
             e.printStackTrace();
         }
     }
+
+    /**
+     * 게임 플레이 전체 기록을 저장하는 SQL 명령어입니다.
+     *
+     * - COLUMN_TIMESTAMP : 게임이 종료된 날짜/시간 정보 (TEXT)
+     * - COLUMN_STAGE     : 진행한 단계 또는 난이도 (INTEGER)
+     * - COLUMN_SUCCESS   : 성공 여부 (1 성공 / 0 실패, INTEGER)
+     * - COLUMN_MILLIS    : 플레이 시간 (ms 단위, INTEGER)
+     *
+     * 사용 목적:
+     *   플레이어의 전체 히스토리를 저장하여
+     *   개별 플레이 분석 및 통계 기능을 제공하기 위함입니다.
+     */
+    @Override
+    protected void onCreateTable(SQLiteDatabase db) {
+        db.execSQL(CREATE_TABLE_SQL);
+    }
+
 
     // -----------------------------
     // 외부용 public
@@ -95,7 +114,7 @@ public class RecordAdapter extends AbstractDataBaseAdapter {
             do {
                 GameRecord gr = parseGameRecord(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_RECORD)));
                 if (gr != null) {
-                    String text = gr.Playdate() + " " + formatDuration(gr.Playtime())
+                    String text = gr.Player() + " " + gr.Playdate() + " " + formatDuration(gr.Playtime())
                             + " " + (gr.Success() ? "성공" : "실패");
                     list.add(text);
                 }
