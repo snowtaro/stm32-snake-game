@@ -15,4 +15,10 @@ void Display_Init(void);
 // grid[y][x] 에 들어있는 문자(' ', 'O', 'o', '*')를 LCD에 출력
 void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS]);
 
+// 디스플레이 절전 모드 설정/조회
+// enable = 1 : 절전 모드 (화면 갱신 중단)
+// enable = 0 : 정상 모드
+void Display_SetSleep(uint8_t enable);
+uint8_t Display_IsSleep(void);
+
 #endif // DISPLAY_H_
