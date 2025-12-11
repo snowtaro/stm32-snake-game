@@ -4,7 +4,8 @@
 #include "display.h"
 #include "snake.h"
 #include "pir.h"
-#include "bt.h"        // 블루투스 추가
+#include "bt.h"
+#include "ds1302.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +17,23 @@ static void delay_loop(volatile uint32_t count)
 {
     while (count--) {
         __NOP();
+    }
+}
+
+static uint32_t TimeToSeconds(DS1302_Time_t t) {
+    return (t.hour * 3600) + (t.minute * 60) + t.second;
+}
+
+// 시작 시간과 종료 시간의 차이(초 단위) 계산
+static uint32_t Calculate_Duration_Sec(DS1302_Time_t start, DS1302_Time_t end) {
+    uint32_t s_sec = TimeToSeconds(start);
+    uint32_t e_sec = TimeToSeconds(end);
+
+    if (e_sec >= s_sec) {
+        return e_sec - s_sec;
+    } else {
+        // 자정을 넘긴 경우 (예: 23:59:50 시작 -> 00:00:10 종료)
+        return (e_sec + 86400) - s_sec;
     }
 }
 
@@ -57,10 +75,9 @@ int main(void)
     // SysTick 1ms 설정
     SysTick_Config(SystemCoreClock / 1000);
 
-    // BT_Init 안에서 SystemInit()을 호출하므로 별도 SystemInit()은 생략
-    BT_Init();        // 블루투스(USART2) 및 PC 터미널(USART1) 초기화
-
     Joystick_Init();  // Changed from Button_Init
+    DS1302_Init();
+    BT_Init();  
     Display_Init();
     PIR_Init();
     snake_setup();
@@ -77,6 +94,12 @@ int main(void)
     // 게임 시간/HEARTBEAT 관리
     uint32_t gameStartTimeMs  = nowMs; // 현재 게임 시작 시각
     uint32_t lastHeartbeatMs  = nowMs; // 마지막 HEARTBEAT 전송 시각
+
+    // 게임 시간 측정용 변수
+    DS1302_Time_t start_time, end_time;
+    
+    // [중요] 최초 게임 시작 시간 기록
+    DS1302_GetTime(&start_time);
 
     while (1)
     {
@@ -105,6 +128,7 @@ int main(void)
         Joystick_HandleInput();
 
         // 1) 조이스틱 입력 → 방향 변경
+// 버튼 입력 → 방향 변경
         KeyInput key = Joystick_GetInput(); // Changed from Button_GetInput
         if (key != KEY_NONE) {
             snake_set_direction(key);
@@ -113,24 +137,36 @@ int main(void)
             delay_loop(50000);
         }
 
+        // ------------------------------------------
         // 2) 게임 상태 업데이트
+        // ------------------------------------------
         if (snake_update()) {
-            // 게임 오버 발생 시점의 경과 시간(초) 계산
-            uint32_t duration_ms  = nowMs - gameStartTimeMs;
-            uint32_t duration_sec = duration_ms / 1000U;
+            // === GAME OVER 상황 ===
+            
+            // 1. 종료 시간 기록
+            DS1302_GetTime(&end_time);
 
-            // 종료 시 결과 프레임 전송: RPL|yyyy-MM-dd HH:mm:ss|경과초|점수
-            BT_SendResultFrame(duration_sec, snake_get_score());
+            // 2. 플레이 시간(초) 계산
+            uint32_t play_duration = Calculate_Duration_Sec(start_time, end_time);
 
-            // 게임 다시 시작
+            // 3. 블루투스 전송 (점수(길이), 경과 시간(초))
+            // snake_get_score()가 길이를 반환한다고 가정
+            BT_SendScoreFrame(snake_get_score(), play_duration);
+
+            // 4. 게임 리셋
             snake_setup();
-            gameStartTimeMs = nowMs;   // 새 게임 시작 시각 갱신
+            
+            // 5. 다음 게임을 위해 시작 시간 재설정
+            DS1302_GetTime(&start_time);
         }
 
-        // 3) 현재 상태를 char 그리드로 변환
+        // ------------------------------------------
+        // 3) 화면 렌더링
+        // ------------------------------------------
+        // 현재 상태를 char 그리드로 변환
         snake_to_grid(grid);
 
-        // 4) 그리드를 LCD에 출력 (절전 모드라면 내부에서 자동으로 skip)
+        // 그리드를 LCD에 출력 (절전 모드라면 내부에서 자동으로 skip)
         Display_DrawGrid(grid);
 
         // 5) 게임 중 HEARTBEAT 전송 (5초 주기)
