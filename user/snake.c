@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "snake.h"
-#include "button.h"
+#include "joystick.h"
 
 static Snake snake;
 static Point food;
