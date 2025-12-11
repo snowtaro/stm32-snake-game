@@ -2,6 +2,8 @@
 #ifndef __DS1302_H
 #define __DS1302_H
 
+#include <stdint.h>
+
 typedef struct {
     uint8_t year;   // 20xx 년 (예: 25)
     uint8_t month;
