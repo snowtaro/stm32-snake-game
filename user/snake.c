@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "snake.h"
+#include "sound.h"
 #include "button.h"
 
 static Snake snake;
@@ -88,6 +89,7 @@ int snake_update(void)
             snake.length++;
         }
         score++;
+        beep_start();
         generate_food();
     }
 
