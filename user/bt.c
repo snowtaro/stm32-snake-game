@@ -1,5 +1,7 @@
 // bt.c
 #include "bt.h"
+#include "snake.h"
+#include "ds1302.h"
 #include <stdio.h>
 
 // 내부 사용 함수 정의
@@ -24,6 +26,7 @@ void BT_Init(void)
     USART1_Init();
     USART2_Init();
     NVIC_Configure();
+    DS1302_Init();
 }
 
 // 문자열 전체 전송 (USART2 = Bluetooth)
@@ -53,30 +56,27 @@ void BT_DelayMs(uint32_t ms)
     SysTick->CTRL = 0;
 }
 
-// 스네이크 게임용 점수 프레임 전송
-void BT_SendScoreFrame(int score, uint32_t duration_ms)
+void BT_SendScoreFrame(int snake_length, uint32_t duration_ms)
 {
     char buffer[128];
-    char score_str[32];
 
-    // duration_ms 를 mm:ss:mss로 변환
-    uint32_t total_ms = duration_ms;
-    uint32_t d_min  = (total_ms / 1000) / 60;
-    uint32_t d_sec  = (total_ms / 1000) % 60;
-    uint32_t d_msec = total_ms % 1000;
+    // 1. 밀리초(ms)를 단순 초(sec)로 변환
+    uint32_t total_sec = duration_ms / 1000;
 
-    // 테스트와 동일 포맷: "RPL|YYYY-MM-DD HH:MM:SS|mm:ss:mss|%s\r\n"
-    // 날짜/시각은 RTC를 쓰지 않으므로 예시로 고정 값 사용 (원하면 수정 가능)
-    // 마지막 필드에 SCORE=NN 형식으로 점수 삽입
-    sprintf(score_str, "SCORE=%d", score);
+    // 2. DS1302에서 현재 시간 가져오기
+    DS1302_Time_t now;
+    DS1302_GetTime(&now);
 
+    // 3. 포맷팅: RPL|날짜 시간|경과초|SCORE=길이
+    // 예: "RPL|2025-01-01 12:30:00|125|SCORE=15" (125초 경과, 길이 15)
     sprintf(buffer,
-            "RPL|2025-01-01 00:00:00|%02lu:%02lu:%03lu|%s\r\n",
-            (unsigned long)d_min,
-            (unsigned long)d_sec,
-            (unsigned long)d_msec,
-            score_str);
+            "RPL|20%02d-%02d-%02d %02d:%02d:%02d|%lu|SCORE=%d\r\n",
+            now.year, now.month, now.day,
+            now.hour, now.minute, now.second,
+            (unsigned long)total_sec, // 단순히 초 단위 정수만 출력
+            snake_length);
 
+    // 4. 전송
     BT_SendString(buffer);
 }
 
