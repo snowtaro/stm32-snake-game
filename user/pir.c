@@ -5,11 +5,6 @@
 
 static volatile uint32_t pir_msTicks = 0;
 
-// SysTick ISR: 1ms 마다 호출된다고 가정
-void SysTick_Handler(void)
-{
-    pir_msTicks++;
-}
 
 uint32_t PIR_GetMillis(void)
 {

@@ -39,7 +39,6 @@ int main(void)
 
     while (1)
     {
-<<<<<<< .merge_file_WEgnBe
         // 0) PIR 센서 상태 확인 및 절전 모드 관리
         uint32_t nowMs = PIR_GetMillis();
         uint8_t pirPresent = PIR_IsPersonPresent();
@@ -59,10 +58,8 @@ int main(void)
             }
         }
         lastPirState = pirPresent;
-=======
         // 0) LED 제어 (Joystick 기능)
         Joystick_HandleInput();
->>>>>>> .merge_file_0IVv37
 
         // 1) 버튼 입력 → 방향 변경
         KeyInput key = Joystick_GetInput(); // Changed from Button_GetInput
