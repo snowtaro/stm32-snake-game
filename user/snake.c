@@ -34,6 +34,8 @@ void snake_setup(void)
 
     score = 0;
     generate_food();
+
+    setting();
 }
 
 // 게임 진행 중 상태 업데이트 - 출력이 1이면 게임 종료

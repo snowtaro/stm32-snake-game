@@ -24,7 +24,7 @@ uint32_t millis(void)
 */
 
 
-void RCC_Configure(void)
+void SND_RCC_Configure(void)
 {  
     /* GPIOB 포트 활성화 */    
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
@@ -33,27 +33,27 @@ void RCC_Configure(void)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 }
 
-void GPIO_Configure(void)
+void SND_GPIO_Configure(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
 
-    // PB10 : PWM 출력
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
+    // PB0 : PWM 출력
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;   // PWM
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
 }
 
-void TIM_Configure(void)
+void SND_TIM_Configure(void)
 {
     TIM_TimeBaseInitTypeDef TIM3_InitStructure;
     TIM_OCInitTypeDef TIM_OCInitStructure;
 
     /* 1MHz(1us tick) 타이머 클럭 만들기 */
-    uint16_t prescaler = (uint16_t)((SystemCoreClock / 1000000) - 1);
+    uint16_t prescaler = (uint16_t)(SystemCoreClock / 1000000);
 
     /* 1) 타이머 기본 설정 먼저 */
-    TIM3_InitStructure.TIM_Period = 499;     // 2kHz PWM
+    TIM3_InitStructure.TIM_Period = 50000;     // 200Hz PWM
     TIM3_InitStructure.TIM_Prescaler = prescaler;
     TIM3_InitStructure.TIM_ClockDivision = 0;
     TIM3_InitStructure.TIM_CounterMode = TIM_CounterMode_Up;
@@ -97,6 +97,12 @@ void beep_update(void)
 }
 
 */
+
+void setting(void) {
+    SND_RCC_Configure();
+    SND_GPIO_Configure();
+    SND_TIM_Configure();
+}
 
 void delay(volatile uint8_t count) {
     while(count--) {
