@@ -6,23 +6,20 @@
 #include "misc.h"
 #include "sound.h"
 
-/*
-volatile uint32_t beep_end_time = 0;
-volatile uint8_t beep_active = 0;
+#define TIM_CLK 1000000
+#define SOUND_QUEUE_SIZE 8
 
-volatile uint32_t ms_ticks = 0;
+typedef struct {
+    uint32_t freq;
+    uint32_t duration;
+} SoundItem;
 
-void SysTick_Handler(void)
-{
-    ms_ticks++;
-}
+// ------------- 사운드 큐 ---------------
+static SoundItem sound_queue[SOUND_QUEUE_SIZE];
+static uint8_t queue_head = 0;
+static uint8_t queue_tail = 0;
 
-uint32_t millis(void)
-{
-    return ms_ticks;
-}
-*/
-
+static volatile uint32_t buzzer_time = 0;
 
 void SND_RCC_Configure(void)
 {  
@@ -50,7 +47,7 @@ void SND_TIM_Configure(void)
     TIM_OCInitTypeDef TIM_OCInitStructure;
 
     /* 1MHz(1us tick) 타이머 클럭 만들기 */
-    uint16_t prescaler = (uint16_t)(SystemCoreClock / 1000000);
+    uint16_t prescaler = (uint16_t)(SystemCoreClock / TIM_CLK);
 
     /* 1) 타이머 기본 설정 먼저 */
     TIM3_InitStructure.TIM_Period = 50000;     // 200Hz PWM
@@ -74,45 +71,63 @@ void SND_TIM_Configure(void)
     TIM_Cmd(TIM3, ENABLE);
 }
 
-/*
-void beep_start(uint32_t duration_ms)
-{
-    TIM_SetCompare3(TIM3, 250);  // 소리 ON (50% duty)
-    beep_active = 1;
-    beep_end_time = millis() + duration_ms; 
-}
 
-void beep_stop(void)
-{
-    TIM_SetCompare3(TIM3, 0);   // 소리 OFF
-    beep_active = 0;
-}
-
-void beep_update(void)
-{
-    if (beep_active && millis() >= beep_end_time)
-    {
-        beep_stop();
-    }
-}
-
-*/
-
-void setting(void) {
+// 사운드 모듈 초기 설정
+void Sound_Init(void) {
     SND_RCC_Configure();
     SND_GPIO_Configure();
     SND_TIM_Configure();
 }
 
-void delay(volatile uint8_t count) {
-    while(count--) {
-        __NOP();
+// 주파수 설정
+void set_freq(uint32_t freq) {
+    if(freq == 0) {
+        TIM3->CCR3 = 0;  
+        return;
+    }
+
+    uint32_t period = TIM_CLK / freq;
+    TIM3->ARR = period;
+    TIM3->CCR3 = period / 2;    // 50% duty - 소리 on
+    TIM3->EGR = TIM_EGR_UG;
+}
+
+// ------------ 큐 삽입 -----------------
+void enqueue(uint32_t freq, uint32_t duration) {
+    uint8_t next_tail = (queue_tail + 1) % SOUND_QUEUE_SIZE;
+    if(next_tail == queue_head) return;     // 큐가 가득 찼으면 무시
+    sound_queue[queue_tail].freq = freq;
+    sound_queue[queue_tail].duration = duration;
+    queue_tail = next_tail;
+}
+
+// 소리 출력 - Hz와 시간을 설정하면 출력
+void sound(uint32_t Hz, uint32_t duration_ms) {
+    enqueue(Hz, duration_ms);
+}
+
+
+
+// -------------- Tick 처리 ------------------
+
+// SysTick_Handler에서 처리 - 부저 시간이 0이면 소리 off
+void Sound_SysTick_Handler(void) {
+    if(buzzer_time > 0) {
+        buzzer_time--;
+        if(buzzer_time == 0) {
+            TIM3->CCR3 = 0;     // 0% duty - 소리 off
+        }
+    }
+
+    // 현재 소리가 없으면 큐에서 꺼내 재생
+    if(buzzer_time == 0 && queue_head != queue_tail) {
+        SoundItem next = sound_queue[queue_head];
+        queue_head = (queue_head + 1) % SOUND_QUEUE_SIZE;
+
+        set_freq(next.freq);            // Hz 설정
+        buzzer_time = next.duration;    // 시간 설정
     }
 }
 
-void beep_start() {
-    TIM_SetCompare3(TIM3, 250);
-    delay(10000);
-    TIM_SetCompare3(TIM3, 0);
-}
+
 

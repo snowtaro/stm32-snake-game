@@ -35,14 +35,12 @@ int main(void)
 
             // 간단 디바운스 (원하면 유지)
             delay_loop(50000);
-            while (Button_GetInput() != KEY_NONE) {
-                // 버튼 뗄 때까지 대기
-            }
         }
 
         // 2) 게임 상태 업데이트
         if(snake_update()) {
             // 게임 오버일 시 > 다시 시작
+            game_over_sound();
             snake_setup();
         }
 
