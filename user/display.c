@@ -7,6 +7,8 @@
 #define CELL_H      12   // 세로 간격 (픽셀)
 
 static uint8_t s_sleepMode = 0;  // 1이면 절전 상태
+volatile uint8_t White_color = WHITE;       // 기본 바탕 색
+volatile uint8_t Black_color = BLACK;       // 기본 뱀, 먹이 색
 
 void Display_Init(void)
 {
@@ -14,6 +16,18 @@ void Display_Init(void)
     LCD_Clear(WHITE);
     s_sleepMode = 0;
 }
+
+// mode에 따라 다크 모드/라이트 모드를 변경
+void set_dark_mode(uint8_t mode) {
+    if(mode) {
+        White_color = BLACK;
+        Black_color = WHITE;
+    } else {
+        White_color = WHITE;
+        Black_color = BLACK;
+    }
+}
+
 
 // 절전 모드 on/off
 void Display_SetSleep(uint8_t enable)
@@ -45,7 +59,7 @@ void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS])
         return;
     }
 
-    LCD_Clear(WHITE);
+    LCD_Clear(White_color);
 
     for (int y = 0; y < GRID_ROWS; y++) {
         for (int x = 0; x < GRID_COLS; x++) {
@@ -59,7 +73,7 @@ void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS])
             int px = BASE_X + x * CELL_W;
             int py = BASE_Y + y * CELL_H;
 
-            LCD_ShowString(px, py, buf, BLACK, WHITE);
+            LCD_ShowString(px, py, buf, Black_color, WHITE);
         }
     }
 

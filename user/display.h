@@ -21,4 +21,7 @@ void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS]);
 void Display_SetSleep(uint8_t enable);
 uint8_t Display_IsSleep(void);
 
+// 다크 모드 설정
+void set_dark_mode(uint8_t);
+
 #endif // DISPLAY_H_

@@ -6,6 +6,7 @@
 #include "pir.h"
 #include "bt.h"
 #include "ds1302.h"
+#include "light_sensor.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -178,6 +179,19 @@ int main(void)
 
         // 6) 게임 속도 조절 (값 조정해서 원하는 스피드 맞추면 됨)
         delay_loop(10000);
+
+
+        // ------------------------------------------
+        // 4) 입력 센서 처리
+        // ------------------------------------------
+
+        // 조도 센서 인터럽트가 발생했으면 다크/라이트 모드 변경
+        if(is_light_event_occured()) {
+            set_dark_mode(get_dark_mode_flag());
+
+            set_light_event_flag(0);
+        }
+
     }
 
     // 여기까지 도달하지 않음
