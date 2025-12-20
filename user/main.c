@@ -188,8 +188,8 @@ int main(void)
 
         // 조도 센서 인터럽트가 발생했으면 다크/라이트 모드 변경
         if(is_light_event_occured()) {
-            set_light_event_flag(0);
             set_dark_mode(get_dark_mode_flag());
+            set_light_event_flag(0);
         }
 
     }
