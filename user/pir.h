@@ -14,7 +14,7 @@ void PIR_Init(void);
 uint8_t PIR_IsPersonPresent(void);
 
 // 시스템 시작 이후 경과한 시간(ms) 반환
-// SysTick 타이머 기반
+// main에서 설정한 SysTick + g_msTicks 기반
 uint32_t PIR_GetMillis(void);
 
 #endif // PIR_H_

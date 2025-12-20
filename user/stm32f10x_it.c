@@ -25,6 +25,8 @@
 #include "stm32f10x_it.h"
 #include "sound.h"
 
+volatile uint32_t g_msTicks = 0;
+
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
   */
@@ -136,6 +138,7 @@ void PendSV_Handler(void)
 void SysTick_Handler(void)
 {
   Sound_SysTick_Handler();
+  g_msTicks++;
 }
 
 /******************************************************************************/
