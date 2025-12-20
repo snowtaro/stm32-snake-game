@@ -202,6 +202,11 @@ static void DS1302_IO_Input(void)
     GPIO_Init(DS1302_PORT, &GPIO_InitStructure);
 }
 
+static void DS_Delay() {
+  volatile int i;
+  for (int i=0;i<50;i++) {__NOP();}
+}
+
 static void DS1302_WriteByte(uint8_t dat)
 {
     DS1302_IO_Output();
@@ -209,11 +214,14 @@ static void DS1302_WriteByte(uint8_t dat)
     for (uint8_t i = 0; i < 8; i++)
     {
         CLK_L();
+        DS_Delay();
         if (dat & 0x01) DAT_H();
         else            DAT_L();
 
-        dat >>= 1;
         CLK_H(); // 상승 에지에서 래치
+        DS_Delay();
+        dat >>= 1;
+        
     }
 }
 
@@ -225,10 +233,13 @@ static uint8_t DS1302_ReadByte(void)
     for (uint8_t i = 0; i < 8; i++)
     {
         dat >>= 1;
-        CLK_H();
+        
         CLK_L();
-
+        DS_Delay();
         if (DAT_READ()) dat |= 0x80;
+
+        CLK_H(); // 상승 에지에서 래치
+        DS_Delay();
     }
     return dat;
 }

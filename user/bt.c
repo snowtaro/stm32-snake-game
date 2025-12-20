@@ -96,8 +96,8 @@ static void RTC_EnsureInit(void)
         t.month  = 12;
         t.day    = 20;
         t.week   = 6;   // (예시) 토요일=6 이런 식, 네 기준에 맞게
-        t.hour   = 11;
-        t.minute = 0;
+        t.hour   = 16;
+        t.minute = 28;
         t.second = 0;
 
         DS1302_SetTime(&t);
