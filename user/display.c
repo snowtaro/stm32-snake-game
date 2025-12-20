@@ -73,7 +73,7 @@ void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS])
             int px = BASE_X + x * CELL_W;
             int py = BASE_Y + y * CELL_H;
 
-            LCD_ShowString(px, py, buf, Black_color, WHITE);
+            LCD_ShowString(px, py, buf, Black_color, White_color);
         }
     }
 
