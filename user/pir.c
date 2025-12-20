@@ -3,7 +3,6 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 
-// main 또는 다른 공용 모듈에서 SysTick_Handler가 g_msTicks를 1ms마다 증가시킨다는 전제
 extern volatile uint32_t g_msTicks;
 
 uint32_t PIR_GetMillis(void)
