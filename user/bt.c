@@ -27,6 +27,34 @@ void BT_Init(void)
     USART2_Init();
     NVIC_Configure();
     DS1302_Init();
+
+    RTC_EnsureInit();
+}
+
+static void RTC_EnsureInit(void)
+{
+    uint8_t magic = 0;
+
+    // DS1302 RAM 0번에 magic 기록/확인 (함수명이 다를 수 있음)
+    DS1302_ReadRAM(0, &magic, 1);
+
+    if (magic != 0xA5) {
+        // 1) WP 해제 + CH 해제 포함해서 SetTime 수행(드라이버가 알아서 하면 더 좋음)
+        DS1302_Time_t t = {
+            .year = 25,   // 2025년이면 25
+            .month = 12,
+            .day = 20,
+            .hour = 11,
+            .minute = 0,
+            .second = 0
+        };
+
+        DS1302_SetTime(&t);
+
+        // 2) magic 저장
+        magic = 0xA5;
+        DS1302_WriteRAM(0, &magic, 1);
+    }
 }
 
 // 문자열 전체 전송 (USART2 = Bluetooth)
@@ -68,9 +96,9 @@ void BT_SendScoreFrame(int snake_length, uint32_t duration_ms)
     DS1302_GetTime(&now);
 
     // 3. 포맷팅: RPL|날짜 시간|경과초|SCORE=길이
-    // 예: "RPL|2025-01-01 12:30:00|125|SCORE=15" (125초 경과, 길이 15)
+    // 예: "RPL|2025-01-01 12:30:00|125|15" (125초 경과, 길이 15)
     sprintf(buffer,
-            "RPL|20%02d-%02d-%02d %02d:%02d:%02d|%lu|SCORE=%d\r\n",
+            "RPL|20%02d-%02d-%02d %02d:%02d:%02d|%lu|%d\r\n",
             now.year, now.month, now.day,
             now.hour, now.minute, now.second,
             (unsigned long)total_sec, // 단순히 초 단위 정수만 출력
