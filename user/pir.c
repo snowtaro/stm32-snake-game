@@ -3,12 +3,12 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 
-static volatile uint32_t pir_msTicks = 0;
-
+// main 또는 다른 공용 모듈에서 SysTick_Handler가 g_msTicks를 1ms마다 증가시킨다는 전제
+extern volatile uint32_t g_msTicks;
 
 uint32_t PIR_GetMillis(void)
 {
-    return pir_msTicks;
+    return g_msTicks;
 }
 
 void PIR_Init(void)
@@ -26,15 +26,13 @@ void PIR_Init(void)
     GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_IPD; // Input pull-down
     GPIO_Init(GPIOC, &GPIO_InitStructure);
 
-    // 1ms SysTick 설정 (SystemCoreClock 은 SystemInit 이후 설정되어 있다고 가정)
-    SysTick_Config(SystemCoreClock / 1000);
+    // 주의:
+    // SysTick_Config(SystemCoreClock / 1000)는 main에서 1회만 수행
+    // 여기서 SysTick를 다시 설정하지 않음
 }
 
 uint8_t PIR_IsPersonPresent(void)
 {
     // PC5 가 HIGH 이면 사람/움직임 감지
-    if (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_5) != Bit_RESET) {
-        return 1;
-    }
-    return 0;
+    return (GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_5) != Bit_RESET) ? 1 : 0;
 }
