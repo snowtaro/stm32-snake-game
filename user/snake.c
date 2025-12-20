@@ -2,7 +2,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "snake.h"
+<<<<<<< HEAD
 #include "joystick.h"
+=======
+#include "sound.h"
+#include "button.h"
+>>>>>>> origin/feature-sound-module
 
 static Snake snake;
 static Point food;
@@ -34,6 +39,24 @@ void snake_setup(void)
     score = 0;
     generate_food();
 }
+
+/*************
+ * 사운드 출력 *
+ **************/
+
+ // 먹이 사운드
+void eat_sound(void) {
+    sound(440, 100);
+    sound(523, 100);
+}
+
+// 게임 오버 사운드 - main에서 호출
+void game_over_sound(void) {
+    sound(659, 100);
+    sound(523, 100);
+    sound(440, 200);
+}
+
 
 // 게임 진행 중 상태 업데이트 - 출력이 1이면 게임 종료
 int snake_update(void)

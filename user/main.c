@@ -22,11 +22,13 @@ static void delay_loop(volatile uint32_t count)
 int main(void)
 {
     SystemInit();
-
+    Sound_Init();
     Joystick_Init(); // Changed from Button_Init
     Display_Init();
     PIR_Init();
     snake_setup();
+
+    SysTick_Config((SystemCoreClock / 1000));   // 1ms마다 Tick 발생
 
     // 난수 시드 (필요시 고정값)
     srand(1);
@@ -77,6 +79,7 @@ int main(void)
         // 2) 게임 상태 업데이트
         if (snake_update()) {
             // 게임 오버일 시 > 다시 시작
+            game_over_sound();
             snake_setup();
         }
 
