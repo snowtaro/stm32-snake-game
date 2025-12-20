@@ -61,6 +61,7 @@ void CDS_NVIC_Configure(void)
 void CDS_Init() {
     CDS_RCC_Configure();
     CDS_GPIO_Configure();
+    CDS_EXTI_Configure();
     CDS_NVIC_Configure();
 }
 
