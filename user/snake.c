@@ -34,8 +34,6 @@ void snake_setup(void)
 
     score = 0;
     generate_food();
-
-    setting();
 }
 
 /*************
@@ -109,7 +107,6 @@ int snake_update(void)
             snake.length++;
         }
         score++;
-        beep_start();
         generate_food();
     }
 

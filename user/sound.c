@@ -88,7 +88,7 @@ void set_freq(uint32_t freq) {
 
     uint32_t period = TIM_CLK / freq;
     TIM3->ARR = period;
-    TIM3->CCR3 = period / 2;    // 50% duty - 소리 on
+    TIM3->CCR3 = period / 4;    // 25% duty - 소리 on
     TIM3->EGR = TIM_EGR_UG;
 }
 

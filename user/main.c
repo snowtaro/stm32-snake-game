@@ -16,10 +16,12 @@ static void delay_loop(volatile uint32_t count)
 int main(void)
 {
     SystemInit();
-
+    Sound_Init();
     Button_Init();
     Display_Init();
     snake_setup();
+
+    SysTick_Config((SystemCoreClock / 1000));   // 1ms마다 Tick 발생
 
     // 난수 시드 (필요시 고정값)
     srand(1);
