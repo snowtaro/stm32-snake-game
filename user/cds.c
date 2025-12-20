@@ -71,13 +71,8 @@ void EXTI15_10_IRQHandler(void)
     {
         uint8_t current_state = GPIO_ReadInputDataBit(GPIOC, GPIO_Pin_10);
 
-        if(current_state == SET) {
-            // 어둡게 하기
-            dark_mode_flag = 1;
-            light_event_occured = 1;
-        } else {
-            // 밝게 하기
-            dark_mode_flag = 0;
+        if (current_state != dark_mode_flag) {
+            dark_mode_flag = current_state;
             light_event_occured = 1;
         }
 
