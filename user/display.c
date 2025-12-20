@@ -82,3 +82,7 @@ void Display_DrawGrid(char grid[GRID_ROWS][GRID_COLS])
     // sprintf(scoreStr, "Score:%d", snake_get_score());
     // LCD_ShowString(10, BASE_Y + GRID_ROWS * CELL_H + 5, scoreStr, BLUE, WHITE);
 }
+
+void Display_Wait(void) {
+    LCD_Clear(White_color);
+}
