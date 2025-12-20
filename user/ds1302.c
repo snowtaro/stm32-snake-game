@@ -7,7 +7,7 @@
 #define DS1302_PORT     GPIOB
 #define DS1302_RCC      RCC_APB2Periph_GPIOB
 
-#define DS1302_RST_PIN  GPIO_Pin_10  // CE (Chip Enable)
+#define DS1302_RST_PIN  GPIO_Pin_13  // CE (Chip Enable)
 #define DS1302_DAT_PIN  GPIO_Pin_11  // I/O (Data)
 #define DS1302_CLK_PIN  GPIO_Pin_12  // SCLK (Serial Clock)
 
