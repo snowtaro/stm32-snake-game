@@ -3,12 +3,12 @@
 #include "stm32f10x_gpio.h"
 #include "stm32f10x_rcc.h"
 #include "misc.h"
-#include "light_sensor.h"
+#include "cds.h"
 
 volatile uint8_t dark_mode_flag = 0;
 volatile uint8_t light_event_occured = 0;
 
-void RCC_Configure(void)
+void CDS_RCC_Configure(void)
 {  
     /* GPIOC 포트 활성화 */    
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC, ENABLE);
@@ -16,7 +16,7 @@ void RCC_Configure(void)
 }
 
 
-void GPIO_Configure(void)
+void CDS_GPIO_Configure(void)
 {
     GPIO_InitTypeDef GPIO_InitStructure;
 
@@ -31,7 +31,7 @@ void GPIO_Configure(void)
 }
 
 
-void EXTI_Configure(void)
+void CDS_EXTI_Configure(void)
 {
     EXTI_InitTypeDef EXTI_InitStructure;
 
@@ -46,7 +46,7 @@ void EXTI_Configure(void)
 }
 
 
-void NVIC_Configure(void)
+void CDS_NVIC_Configure(void)
 {
     NVIC_InitTypeDef NVIC_InitStructure;
 
@@ -56,6 +56,12 @@ void NVIC_Configure(void)
     NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
 
     NVIC_Init(&NVIC_InitStructure);
+}
+
+void CDS_Init() {
+    CDS_RCC_Configure();
+    CDS_GPIO_Configure();
+    CDS_NVIC_Configure();
 }
 
 // 주변 환경이 어두워지거나 밝아지면 인터럽트

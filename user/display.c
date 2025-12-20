@@ -7,8 +7,8 @@
 #define CELL_H      12   // 세로 간격 (픽셀)
 
 static uint8_t s_sleepMode = 0;  // 1이면 절전 상태
-volatile uint8_t White_color = WHITE;       // 기본 바탕 색
-volatile uint8_t Black_color = BLACK;       // 기본 뱀, 먹이 색
+volatile uint16_t White_color = WHITE;       // 기본 바탕 색
+volatile uint16_t Black_color = BLACK;       // 기본 뱀, 먹이 색
 
 void Display_Init(void)
 {

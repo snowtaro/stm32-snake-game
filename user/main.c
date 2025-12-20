@@ -6,7 +6,7 @@
 #include "pir.h"
 #include "bt.h"
 #include "ds1302.h"
-#include "light_sensor.h"
+#include "cds.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -82,6 +82,7 @@ int main(void)
     Display_Init();
     PIR_Init();
     snake_setup();
+    CDS_Init();
 
     // 난수 시드 (필요시 고정값)
     srand(1);
