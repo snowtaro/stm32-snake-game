@@ -2,12 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "snake.h"
-<<<<<<< HEAD
 #include "joystick.h"
-=======
 #include "sound.h"
-#include "button.h"
->>>>>>> origin/feature-sound-module
 
 static Snake snake;
 static Point food;
@@ -106,6 +102,7 @@ int snake_update(void)
 
     // 먹이를 먹었으면 길이 증가
     if (ateFood) {
+        eat_sound();
         if (snake.length < MAX_SNAKE_SIZE) {
             snake.body[snake.length] = snake.body[snake.length - 1];
             snake.length++;
