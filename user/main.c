@@ -8,6 +8,9 @@
 #include "ds1302.h"
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
+
+extern volatile uint32_t g_msTicks;
 
 // 간단한 소프트웨어 딜레이 (게임 속도용)
 static void delay_loop(volatile uint32_t count)
@@ -38,12 +41,43 @@ static uint32_t Calculate_Duration_Sec(DS1302_Time_t start, DS1302_Time_t end) {
 // 10초 이상 사람이 없으면 절전 모드 진입
 #define PIR_IDLE_SLEEP_MS   10000U
 
+// 블루투스 HEARTBEAT 주기(ms)
+#define BT_HEARTBEAT_MS     5000U
+
+// 게임 종료 시 결과 프레임 전송
+// 포맷: RPL|yyyy-MM-dd HH:mm:ss|경과시간(초)|점수\r\n
+static void BT_SendResultFrame(uint32_t duration_sec, int score)
+{
+    char buffer[128];
+
+    // 실제 RTC가 없으므로 예시로 고정된 날짜/시간 사용
+    // 필요하면 RTC 연동해서 실제 시각으로 교체
+    int year  = 2025;
+    int month = 11;
+    int day   = 13;
+    int hour  = 17;
+    int min   = 0;
+    int sec   = 0;
+
+    sprintf(buffer,
+            "RPL|%04d-%02d-%02d %02d:%02d:%02d|%lu|%d\r\n",
+            year, month, day, hour, min, sec,
+            (unsigned long)duration_sec,
+            score);
+
+    BT_SendString(buffer);
+}
+
 int main(void)
 {
     SystemInit();
+
+    // SysTick 1ms 설정
+    SysTick_Config(SystemCoreClock / 1000);
+
+    Joystick_Init();  // Changed from Button_Init
     DS1302_Init();
     BT_Init();  
-    Joystick_Init(); // Changed from Button_Init
     Display_Init();
     PIR_Init();
     snake_setup();
@@ -54,8 +88,12 @@ int main(void)
     static char grid[GRID_ROWS][GRID_COLS];
 
     // PIR 관련 시간 관리
-    uint32_t lastMotionTime = PIR_GetMillis();  // 마지막으로 사람이 감지된 시점
-    uint8_t  lastPirState   = 0;                // 직전 PIR 상태(0/1)
+    uint32_t nowMs          = PIR_GetMillis();
+    uint32_t lastMotionTime = nowMs;   // 마지막으로 사람이 감지된 시점
+
+    // 게임 시간/HEARTBEAT 관리
+    uint32_t gameStartTimeMs  = nowMs; // 현재 게임 시작 시각
+    uint32_t lastHeartbeatMs  = nowMs; // 마지막 HEARTBEAT 전송 시각
 
     // 게임 시간 측정용 변수
     DS1302_Time_t start_time, end_time;
@@ -65,8 +103,10 @@ int main(void)
 
     while (1)
     {
+        // 공통 시간 값 (루프 시작 시점 기준)
+        nowMs = PIR_GetMillis();
+
         // 0) PIR 센서 상태 확인 및 절전 모드 관리
-        uint32_t nowMs = PIR_GetMillis();
         uint8_t pirPresent = PIR_IsPersonPresent();
 
         if (pirPresent) {
@@ -83,10 +123,11 @@ int main(void)
                 }
             }
         }
-        lastPirState = pirPresent;
-        // 0) LED 제어 (Joystick 기능)
+
+        // 0-1) LED 제어 (Joystick 기능)
         Joystick_HandleInput();
 
+        // 1) 조이스틱 입력 → 방향 변경
 // 버튼 입력 → 방향 변경
         KeyInput key = Joystick_GetInput(); // Changed from Button_GetInput
         if (key != KEY_NONE) {
@@ -94,10 +135,6 @@ int main(void)
 
             // 간단 디바운스 (원하면 유지)
             delay_loop(50000);
-            while (Joystick_GetInput() != KEY_NONE) {
-                // 버튼 뗄 때까지 대기
-                Joystick_HandleInput(); // Keep handling LEDs while waiting?
-            }
         }
 
         // ------------------------------------------
@@ -132,12 +169,17 @@ int main(void)
         // 그리드를 LCD에 출력 (절전 모드라면 내부에서 자동으로 skip)
         Display_DrawGrid(grid);
 
-        // ------------------------------------------
-        // 4) 게임 속도 조절
-        // ------------------------------------------
-        // 값 조정해서 원하는 스피드 맞추면 됨
+        // 5) 게임 중 HEARTBEAT 전송 (5초 주기)
+        if ((nowMs - lastHeartbeatMs) >= BT_HEARTBEAT_MS) {
+            // 게임 중 keep-alive 용 단순 문자열
+            BT_SendString("HEARTBEAT\r\n");
+            lastHeartbeatMs = nowMs;
+        }
+
+        // 6) 게임 속도 조절 (값 조정해서 원하는 스피드 맞추면 됨)
         delay_loop(10000);
     }
 
-    return 0;
+    // 여기까지 도달하지 않음
+    // return 0;
 }
