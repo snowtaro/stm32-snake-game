@@ -1,9 +1,6 @@
 #include "ds1302.h"
 #include "stm32f10x.h"
 
-// ================================================================
-// 1. 핀 설정 (회로에 맞게 수정하세요)
-// ================================================================
 #define DS1302_PORT     GPIOB
 #define DS1302_RCC      RCC_APB2Periph_GPIOB
 
@@ -62,8 +59,6 @@ void DS1302_Init(void)
     // 쓰기 방지 해제
     DS1302_WriteReg(DS_ADDR_WP, 0x00);
 
-    // CH(Clock Halt) 비트가 1이면 시계 멈춤 -> 0으로 내려서 시작
-    // 초 레지스터 bit7 = CH
     {
         uint8_t sec_reg = DS1302_ReadReg(DS_ADDR_SEC | 0x01);
         if (sec_reg & 0x80) {
@@ -72,9 +67,6 @@ void DS1302_Init(void)
             DS1302_WriteReg(DS_ADDR_SEC, sec_bcd); // CH=0
         }
     }
-
-    // 필요 시 다시 WP 걸어도 되지만, SetTime/WriteRAM에서 다시 관리하므로 일단 풀어둬도 됨
-    // DS1302_WriteReg(DS_ADDR_WP, 0x80);
 }
 
 void DS1302_GetTime(DS1302_Time_t *time)
