@@ -32,7 +32,6 @@ import com.example.sankegamerecord.Adapter.GameRecord;
 import com.example.sankegamerecord.DataBaseAdapter.RankAdapter;
 import com.example.sankegamerecord.DataBaseAdapter.RecordAdapter;
 
-import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.LinkedList;
 import java.util.Queue;
@@ -42,6 +41,7 @@ public class GetRecordService extends Service {
     private static final String TAG = "GetRecordService";
 
     public static final String ACTION_CONNECT = "ACTION_CONNECT";
+    public static final String ACTION_REPLY_RECEIVED = "ACTION_REPLY_RECEIVED";
     public static final String EXTRA_DEVICE_ADDRESS = "EXTRA_DEVICE_ADDRESS";
     private BluetoothConnectionAdapter btAdapter;
     private ProtocolInterpreter ptInterpreter;
@@ -60,7 +60,8 @@ public class GetRecordService extends Service {
     private Handler handler = new Handler(Looper.getMainLooper());
     private Runnable replyTimeoutRunnable;
 
-    private final Queue<byte[]> pendingPackets = new LinkedList<>();
+
+    private final Queue<String> pendingPackets = new LinkedList<>();
 
     @Override
     public void onCreate() {
@@ -76,7 +77,7 @@ public class GetRecordService extends Service {
         currentName = sp.getString(KEY_USERNAME, "AAA");
 
         IntentFilter filter = new IntentFilter("HEADSUP_REPLY");
-        registerReceiver(new ReplyInputReceiver(this), filter, Context.RECEIVER_NOT_EXPORTED);
+        registerReceiver(new ReplyInputReceiver(), filter, Context.RECEIVER_NOT_EXPORTED);
     }
 
 
@@ -90,14 +91,32 @@ public class GetRecordService extends Service {
     @RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_CONNECT.equals(intent.getAction())) {
-            String mac = intent.getStringExtra(EXTRA_DEVICE_ADDRESS);
-            if (mac != null) {
-                startCommunication(mac);
-            } else {
-                Log.w(TAG, "No MAC address received");
+        if (intent != null)
+            if (ACTION_CONNECT.equals(intent.getAction())) {
+                String mac = intent.getStringExtra(EXTRA_DEVICE_ADDRESS);
+                if (mac != null) {
+                    startCommunication(mac);
+                } else {
+                    Log.w(TAG, "No MAC address received");
+                }
+            } else if (ACTION_REPLY_RECEIVED.equals(intent.getAction())) {
+
+                // 입력이 온 경우에만 이 블록 실행됨
+                String replyName = intent.getStringExtra("EXTRA_REPLY_NAME");
+                Log.i(TAG, replyName);
+                currentName = replyName;
+                sp.edit().putString(KEY_USERNAME, currentName).apply();
+
+                waitingReply = false;
+
+                if (replyTimeoutRunnable != null)
+                    handler.removeCallbacks(replyTimeoutRunnable);
+                Log.i(TAG, "CANCELING NOTIFICATION");
+                flushPendingPackets();
+
+                NotificationManagerCompat.from(this).cancel(2001);
+
             }
-        }
         return START_STICKY;
     }
 
@@ -117,21 +136,27 @@ public class GetRecordService extends Service {
             public void onReceive(Context context, Intent intent) {
                 byte[] data = intent.getByteArrayExtra(BluetoothConnectionAdapter.EXTRA_DATA);
                 if (data == null) return;
-                // === HEARTBEAT Filter===
-
-                if (data.length == 1 && data[0] == 0x00) {
+                // === HEARTBEAT 필터링 추가 (핵심) ===
+                // 1) 길이가 1이고 값이 0x00 → heartbeat → 버림
+                String received = new String(data, StandardCharsets.UTF_8);
+                if (received.equals("HEARTBEAT")) {
                     Log.i(TAG, "Heartbeat received. Ignored.");
                     return;
                 }
+                else{
+                    Log.i(TAG, "RECEIVED raw bytes");
+                    if (!pendingPackets.contains(received)) {
+                        pendingPackets.add(received);
+                    } else {
+                        Log.i(TAG, "Duplicate packet skipped: " + received);
+                    }
 
-                Log.i(TAG, "RECEIVED raw bytes");
-
-                if (waitingReply) {
-                    pendingPackets.add(data);
-                    Log.i(TAG, "Queued. size=" + pendingPackets.size());
-                } else {
-                    pendingPackets.add(data);
-                    showHeadsUpReplyNotification();
+                    Log.i(TAG, "ERER" + received);
+                    if (waitingReply) {
+                        Log.i(TAG, "Queued. size=" + pendingPackets.size());
+                    } else {
+                        showHeadsUpReplyNotification();
+                    }
                 }
             }
 
@@ -149,13 +174,13 @@ public class GetRecordService extends Service {
 
     private void flushPendingPackets() {
         while (!pendingPackets.isEmpty()) {
-            byte[] packet = pendingPackets.poll();
+            String packet = pendingPackets.poll();
+            Log.i("TAG","flushing "+packet);
             processPacket(packet);
         }
     }
 
-    private void processPacket(byte[] data) {
-        String received = new String(data, StandardCharsets.UTF_8);
+    private void processPacket(String received) {
         GameRecord record = ptInterpreter.makeRecord(received, currentName);
         RankDB.addScore(record);
         RecordDB.addRecord(record);
@@ -232,35 +257,25 @@ public class GetRecordService extends Service {
     // ---------------------------------------
     public static class ReplyInputReceiver extends BroadcastReceiver {
 
-        private final WeakReference<GetRecordService> serviceRef;
 
-        public ReplyInputReceiver(GetRecordService service) {
-            serviceRef = new WeakReference<>(service);
+        public ReplyInputReceiver() {
         }
 
         @Override
         public void onReceive(Context context, Intent intent) {
             if (!"HEADSUP_REPLY".equals(intent.getAction())) return;
 
-            GetRecordService service = serviceRef.get();
-            if (service == null) return;
 
             Bundle results = RemoteInput.getResultsFromIntent(intent);
             if (results == null) return;
 
             CharSequence nameInput = results.getCharSequence("key_name");
-            if (nameInput != null) {
-                service.currentName = nameInput.toString();
-                service.sp.edit().putString(KEY_USERNAME, service.currentName).apply();
-                Log.i(TAG, "Reply received: " + service.currentName);
-            }
+            if (nameInput == null) return;
 
-            service.waitingReply = false;
-
-            if (service.replyTimeoutRunnable != null)
-                service.handler.removeCallbacks(service.replyTimeoutRunnable);
-
-            service.flushPendingPackets();
+            Intent svc = new Intent(context, GetRecordService.class);
+            svc.setAction(GetRecordService.ACTION_REPLY_RECEIVED);
+            svc.putExtra("EXTRA_REPLY_NAME", nameInput);
+            context.startService(svc);
         }
     }
 
