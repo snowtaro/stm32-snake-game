@@ -144,7 +144,7 @@ int main(void)
         // ------------------------------------------
         // 2) 게임 상태 업데이트
         // ------------------------------------------
-        if (snake_update()) {
+        if (snake_update() || Display_IsSleep()) {
             // === GAME OVER 상황 ===
             game_over_sound();
             // 1. 종료 시간 기록
