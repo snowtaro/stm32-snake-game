@@ -89,13 +89,12 @@ static void RTC_EnsureInit(void)
 
     if (magic != 0xA5)
     {
-        // ★ 여기 시간을 네가 원하는 "현재"로 바꿔서 한 번 세팅하면 됨
         // year는 20xx에서 xx만 (예: 2025 -> 25)
         DS1302_Time_t t;
         t.year   = 25;
         t.month  = 12;
         t.day    = 20;
-        t.week   = 6;   // (예시) 토요일=6 이런 식, 네 기준에 맞게
+        t.week   = 6; 
         t.hour   = 16;
         t.minute = 28;
         t.second = 0;
