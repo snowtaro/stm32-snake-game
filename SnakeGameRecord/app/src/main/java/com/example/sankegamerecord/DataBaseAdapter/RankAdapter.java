@@ -24,19 +24,24 @@ public class RankAdapter extends AbstractDataBaseAdapter {
     private static final String COLUMN_NAME = "PlayerName"; //플레이어 이름
     private static final String COLUMN_PLAYDATE = "PlayDate";
     private static final String COLUMN_PLAYTIME = "PlayTime";
+    private static final String COLUMN_SCORE = "Score";
 
     /**
      * 랭킹 테이블을 생성하는 SQL 명령어입니다.
      * COLUMN_ID: 고유 ID (자동 증가), Primary Key
-     * COLUMN_RECORD: 실제 게임 기록 데이터 (JSON 문자열 형태로 저장)
-     * COLUMN_RANK: 해당 기록의 순위 (1, 2, 3, ...)
+     * COLUMN_NAME: player 이름
+     * COLUMN_PLAYDATE: 플레이 날짜
+     * COLUMN_PLAYTIME: 플레이 시간
+     * COLUMN_SCORE: 플레이 점수
      */
     public static final String CREATE_TABLE_SQL =
             "CREATE TABLE " + TABLE_NAME + "("
                     + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
                     + COLUMN_NAME + " TEXT NOT NULL, "
                     + COLUMN_PLAYDATE + " TEXT NOT NULL, "
-                    + COLUMN_PLAYTIME + " INTEGER NOT NULL);";
+                    + COLUMN_PLAYTIME + " INTEGER NOT NULL, "
+                    + COLUMN_SCORE + " INTEGER NOT NULL, "
+                    + "UNIQUE(PlayerName, PlayDate, PlayTime, Score));";
 
     /**
      * 생성자: 부모 클래스(AbstractDataBaseAdapter)를 호출하여 초기화합니다.
@@ -80,14 +85,12 @@ public class RankAdapter extends AbstractDataBaseAdapter {
      * @param gameRecord 새로 추가할 게임 기록 객체
      */
     public void addScore(GameRecord gameRecord) {
-        // 1. 실패 기록 필터링: 게임을 성공하지 못한 기록은 랭킹에 반영하지 않고 즉시 종료합니다.
-        if (!gameRecord.Success()) return;
 
         SQLiteDatabase db = this.database;
         db.beginTransaction(); // 데이터베이스 트랜잭션 시작 (작업 단위 묶기)
-        long playtime = gameRecord.Playtime().toMillis();
+        int playtime = gameRecord.Playtime();
         try {
-            Log.i("PARSE", "ER"+ playtime);
+            Log.i("PARSE", "ER" + playtime);
         } catch (NumberFormatException e) {
             Log.e("DB_ERROR", "Invalid time format after cleaning: " + playtime);
             return;
@@ -96,18 +99,21 @@ public class RankAdapter extends AbstractDataBaseAdapter {
         values.put(COLUMN_NAME, gameRecord.Player());
         values.put(COLUMN_PLAYDATE, gameRecord.Playdate().toString());
         values.put(COLUMN_PLAYTIME, playtime);
+        values.put(COLUMN_SCORE, gameRecord.Score());
         try {
             db.insert(TABLE_NAME, null, values);
 
             // 3. 초과 데이터 삭제 (Delete/Trim) 쿼리
             // 100번째로 빠른 기록의 PlayTime 값보다 큰(느린) 모든 기록을 삭제합니다.
-            String deleteSql = "DELETE FROM " + TABLE_NAME +
-                    " WHERE " + COLUMN_PLAYTIME + " > (" +
-                    "    SELECT " + COLUMN_PLAYTIME +
-                    "    FROM " + TABLE_NAME +
-                    "    ORDER BY " + COLUMN_PLAYTIME + " ASC " + // 숫자가 낮은(빠른) 순서로 정렬
-                    "    LIMIT 1 OFFSET 4" +
-                    ");";
+            String deleteSql =
+                    "DELETE FROM " + TABLE_NAME +
+                            " WHERE " + COLUMN_ID + " NOT IN (" +
+                            "    SELECT " + COLUMN_ID +
+                            "    FROM " + TABLE_NAME +
+                            "    ORDER BY " + COLUMN_SCORE + " DESC, " + COLUMN_PLAYTIME + " ASC, " + COLUMN_ID + " DESC " +
+                            "    LIMIT 5" +
+                            ");";
+
 
             db.execSQL(deleteSql);
             db.setTransactionSuccessful(); // 모든 작업 성공: 변경 사항을 최종적으로 데이터베이스에 반영
@@ -133,16 +139,15 @@ public class RankAdapter extends AbstractDataBaseAdapter {
     public List<String> getAllRanksForDisplay() {
         List<String> list = new ArrayList<>();
         Cursor cursor = getAllRanks(); // 랭킹을 순위 순으로 가져오는 내부 함수 호출
-
+        int rank = 1;
         if (cursor != null && cursor.moveToFirst()) {
             do {
-                int rank = 1;
-
                 String playerName = cursor.getString(1);
                 String playDate = cursor.getString(2);
-                long playtime = cursor.getLong(3);
-                // 표시할 문자열 포맷 생성: "1위 (이름) 2025-11-13T17:11 01:30.123"
-                String text = rank + ". " + playerName + " " + playDate + " " + formatMillis(playtime);
+                int playtime = cursor.getInt(3);
+                int score = cursor.getInt(4);
+                // 표시할 문자열 포맷 생성: "1위 (이름) 2025-11-13T17:11 01:30 (점수)점"
+                String text = rank + ". " + playerName + " " + playDate.replace("T", " ") + " " + formatMillis(playtime) + " " + score + "점";
                 list.add(text);
                 ++rank;
             } while (cursor.moveToNext());
@@ -163,7 +168,7 @@ public class RankAdapter extends AbstractDataBaseAdapter {
                 null,       // 모든 컬럼 조회 (null)
                 null, null, // 조건 없음 (WHERE 절 없음)
                 null, null, // GROUP BY, HAVING 절 없음
-                COLUMN_PLAYTIME + " ASC"); // 순위(rank) 오름차순으로 정렬
+                COLUMN_SCORE + " DESC, " + COLUMN_PLAYTIME + " ASC, " + COLUMN_ID + " DESC"); // 순위(rank) 오름차순으로 정렬
     }
 
 }
