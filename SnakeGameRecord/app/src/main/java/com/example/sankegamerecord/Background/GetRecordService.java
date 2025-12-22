@@ -139,11 +139,10 @@ public class GetRecordService extends Service {
                 // === HEARTBEAT 필터링 추가 (핵심) ===
                 // 1) 길이가 1이고 값이 0x00 → heartbeat → 버림
                 String received = new String(data, StandardCharsets.UTF_8);
-                if (received.equals("HEARTBEAT")) {
+                if (received.equals("HEARTBEAT") || (!received.startsWith("RPL"))) {
                     Log.i(TAG, "Heartbeat received. Ignored.");
-                    return;
-                }
-                else{
+
+                } else{
                     Log.i(TAG, "RECEIVED raw bytes");
                     if (!pendingPackets.contains(received)) {
                         pendingPackets.add(received);
@@ -151,7 +150,7 @@ public class GetRecordService extends Service {
                         Log.i(TAG, "Duplicate packet skipped: " + received);
                     }
 
-                    Log.i(TAG, "ERER" + received);
+                    Log.i(TAG, received);
                     if (waitingReply) {
                         Log.i(TAG, "Queued. size=" + pendingPackets.size());
                     } else {
