@@ -40,6 +40,7 @@ The system maintains two separate database tables: one for recent game records a
 ---
 
 ## Project Structure //only important code
+
 com.example.sankegamerecord
 ├── Adapter
 │   ├── BluetoothConnectionAdapter   // Bluetooth SPP connection handling
