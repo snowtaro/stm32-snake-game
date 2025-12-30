@@ -40,43 +40,38 @@ The system maintains two separate database tables: one for recent game records a
 ---
 
 ## Project Structure //only important code
+### Project Structure
 
-com.example.sankegamerecord
-├── Adapter
-│   ├── BluetoothConnectionAdapter   // Bluetooth SPP connection handling
-│   ├── GameRecord                   // Game record data model
-│   └── RecordListAdapter            // RecyclerView adapter
-│
-├── Background
-│   ├── GetRecordService             // Background data receiving service
-│   └── ProtocolInterpreter          // Incoming data parsing logic
-│
-├── DataBaseAdapter
-│   ├── AbstractDataBaseAdapter      // Database base class
-│   ├── RankAdapter                  // Ranking table management
-│   └── RecordAdapter                // Record table management
-│
-├── Screens
-│   ├── ButtonTouchEffect            // UI button interaction effect
-│   ├── MainActivity                 // Main screen
-│   └── RankingActivity              // Ranking screen
-│
-res
-├── anim
-│   ├── button_press.xml
-│   └── button_release.xml
-│
-├── drawable
-│   ├── button_selector.xml        
-│   ├── tab_left_selector.xml        // Changes button color
-│   ├── tab_right_selector.xml
-│   └── mainlobby.png
-│
-├── layout
-│   ├── activity_main.xml      
-│   ├── activity_ranking.xml
-│   ├── item_bubble_card.xml        // Card Form for List 
-│   └── item_text_row.xml           // Arrange the List
+com.example.sankegamerecord <br />
+├── Adapter <br />
+│   ├── BluetoothConnectionAdapter # Bluetooth SPP connection handling <br />
+│   ├── GameRecord # Game record data model <br />
+│   └── RecordListAdapter # RecyclerView adapter <br />
+├── Background <br />
+│   ├── GetRecordService # Background data receiving service <br />
+│   └── ProtocolInterpreter # Incoming data parsing logic <br />
+├── DataBaseAdapter <br />
+│   ├── AbstractDataBaseAdapter # Database base class <br />
+│   ├── RecordAdapter # FIFO record table (max 20) <br />
+│   └── RankAdapter # Ranking table (sorted insertion) <br />
+├── Screens <br />
+│   ├── MainActivity # Main screen <br />
+│   ├── RankingActivity # Ranking screen <br />
+│   └── ButtonTouchEffect # UI button interaction effect <br />
+└── res <br />
+    ├── anim <br />
+    │   ├── button_press.xml <br />
+    │   └── button_release.xml <br />
+    ├── drawable <br />
+    │   ├── button_selector.xml <br />
+    │   ├── tab_left_selector.xml <br />
+    │   ├── tab_right_selector.xml <br />
+    │   └── mainlobby.png <br />
+    └── layout <br />
+        ├── activity_main.xml <br />
+        ├── activity_ranking.xml <br />
+        ├── item_bubble_card.xml <br />
+        └── item_text_row.xml <br />
 
 ---
 
